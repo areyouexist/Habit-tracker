@@ -111,8 +111,6 @@ body {
 .h-emoji { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
 .h-name-wrap { display: flex; flex-direction: column; justify-content: center; width: 100%; }
 .h-name  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.streak { font-size: 10px; font-weight: 600; color: #ff9500; margin-top: 1px; }
-.sparkline-container { height: 12px; width: 100%; margin-top: 2px; }
 
 /* Checkbox cells */
 .cb-cell { width: var(--col-w); min-width: var(--col-w); flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; }
@@ -151,11 +149,8 @@ body {
 .reality-check { background: var(--card); border-left: 4px solid var(--green); padding: 14px; border-radius: 4px 12px 12px 4px; margin-bottom: 25px; font-size: 13px; line-height: 1.4; color: var(--text); }
 .reality-title { font-weight: 700; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
 
-/* Trend & Heatmap */
-.trend-wrap { height: 60px; display: flex; align-items: flex-end; gap: 3px; margin-bottom: 15px; }
-.trend-bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
-.trend-bar { width: 100%; max-width: 8px; background: var(--green); border-radius: 3px 3px 0 0; min-height: 2px; opacity: 0.8; }
-.trend-bar.future { background: var(--border); opacity: 0.3; }
+/* Trend Area Chart Container */
+.trend-container { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 20px; height: 95px; width: 100%; position: relative; }
 .heatmap-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 25px; }
 .hm-cell { width: 16px; height: 16px; border-radius: 4px; background: var(--border); }
 
@@ -165,12 +160,13 @@ body {
 .notes-input:focus { border-color: var(--green); }
 @media (min-width: 768px) { .notes-container { width: 33.33%; } }
 
-/* Sync Modal & Footer Links */
+/* Footer Links */
 .footer-links { text-align: center; font-size: 12px; color: var(--muted); padding: 10px; margin-bottom: 10px; display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; }
 .footer-links span { cursor: pointer; opacity: 0.7; }
 .footer-links span:active { opacity: 1; }
 .footer-hint { text-align: center; font-size: 11px; color: var(--muted); padding-bottom: 20px; opacity: 0.4; }
 
+/* Cloud Sync Modal */
 .sync-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: none; align-items: center; justify-content: center; padding: 1rem; }
 .sync-modal.active { display: flex; }
 .sync-box { background: var(--card); padding: 20px; border-radius: 16px; width: 100%; max-width: 340px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
@@ -232,7 +228,7 @@ body {
   </div>
 
   <div class="dash-title">Тренд виконання</div>
-  <div class="trend-wrap" id="trend-wrap"></div>
+  <div class="trend-container" id="trend-container"></div>
 
   <div class="dash-title">Теплова карта</div>
   <div class="heatmap-wrap" id="heatmap-wrap"></div>
@@ -255,10 +251,10 @@ body {
 <div class="sync-modal" id="sync-modal">
   <div class="sync-box">
     <h3>GitHub Gist Sync</h3>
-    <input type="text" id="gist-token" class="sync-input" placeholder="GitHub PAT (починається на ghp_...)">
-    <input type="text" id="gist-id" class="sync-input" placeholder="Gist ID (набір символів з URL)">
+    <input type="text" id="gist-token" class="sync-input" placeholder="GitHub PAT (ghp_...)">
+    <input type="text" id="gist-id" class="sync-input" placeholder="Gist ID">
     <div style="font-size: 11px; color: var(--muted); text-align: center; margin-bottom: 10px;">
-      Введи дані один раз. Синхронізація відбуватиметься автоматично у фоні.
+      Введи дані один раз для автоматичної синхронізації у фоні.
     </div>
     <div class="sync-actions">
       <button class="sync-btn sync-btn-secondary" onclick="closeSyncModal()">Закрити</button>
@@ -433,30 +429,51 @@ function generateRealityCheck(pct) {
   }
 }
 
-// Генерація SVG спарклайну для кількісних даних
-function getSparkline(hid, state, daysInMonth) {
-  let vals = [];
-  for(let d=1; d<=daysInMonth; d++) {
-    let val = state[key(hid, d)];
-    if(val && !isNaN(parseFloat(val))) vals.push({d, v: parseFloat(val)});
+// Побудова графіку з областями (Area Chart) через SVG
+function drawAreaChart(dayStats, daysInMonth, isCurrentRealMonth) {
+  const container = document.getElementById('trend-container');
+  container.innerHTML = '';
+
+  const totalHabitsCount = HABITS.filter(h => !h.isCat).length || 1;
+  const maxDays = isCurrentRealMonth ? Math.min(REAL_TODAY, daysInMonth) : daysInMonth;
+  
+  let validPoints = [];
+  for (let d = 1; d <= maxDays; d++) {
+    let pct = (dayStats[d] / totalHabitsCount) * 100;
+    validPoints.push({d, pct});
   }
-  if(vals.length < 2) return '';
-  
-  let min = Math.min(...vals.map(x=>x.v)), max = Math.max(...vals.map(x=>x.v));
-  if(min === max) { min -= 1; max += 1; }
-  
-  let w = 100, h = 12;
-  let pts = vals.map(x => {
-    let px = (x.d / daysInMonth) * w;
-    let py = h - ((x.v - min) / (max - min)) * h;
-    return `${px},${py}`;
-  }).join(' ');
-  
-  return `<div class="sparkline-container">
-    <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="overflow:visible;">
-      <polyline points="${pts}" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  if (validPoints.length === 0) {
+    container.innerHTML = '<div style="font-size:12px; color:var(--muted); text-align:center; padding-top:25px;">Немає даних для побудови графіку</div>';
+    return;
+  }
+
+  const w = container.clientWidth - 24;
+  const h = 71; 
+
+  // Переведення координат
+  let pts = validPoints.map(p => {
+    let x = ((p.d - 1) / (daysInMonth - 1)) * w;
+    let y = h - (p.pct / 100) * h;
+    return {x, y};
+  });
+
+  let linePath = `M ${pts[0].x} ${pts[0].y} ` + pts.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
+  let areaPath = `${linePath} L ${pts[pts.length - 1].x} ${h} L ${pts[0].x} ${h} Z`;
+
+  container.innerHTML = `
+    <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="overflow:visible; display:block;">
+      <defs>
+        <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--green)" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="var(--green)" stop-opacity="0.00"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaPath}" fill="url(#chart-grad)" />
+      <path d="${linePath}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${isCurrentRealMonth && pts[REAL_TODAY - 1] ? `<circle cx="${pts[REAL_TODAY - 1].x}" cy="${pts[REAL_TODAY - 1].y}" r="4" fill="var(--green)" stroke="var(--card)" stroke-width="1.5"/>` : ''}
     </svg>
-  </div>`;
+  `;
 }
 
 function render() {
@@ -537,7 +554,6 @@ function render() {
       grid.appendChild(row); return;
     }
 
-    let sparklineHtml = h.isNum ? getSparkline(h.id, state, daysInMonth) : '';
     lbl.innerHTML = `
       <div class="habit-lbl">
         ${orderHtml}
@@ -545,7 +561,6 @@ function render() {
           <span class="h-emoji">${h.emoji}</span>
           <div class="h-name-wrap">
             <span class="h-name">${h.name}</span>
-            ${sparklineHtml}
           </div>
         </div>
       </div>`;
@@ -583,16 +598,15 @@ function render() {
     grid.appendChild(row);
   });
 
-  const trendWrap = document.getElementById('trend-wrap');
+  // Малюємо новий графік тренду
+  drawAreaChart(dayStats, daysInMonth, isCurrentRealMonth);
+
+  // Малюємо теплову карту
   const heatmapWrap = document.getElementById('heatmap-wrap');
-  trendWrap.innerHTML = ''; heatmapWrap.innerHTML = '';
+  heatmapWrap.innerHTML = '';
   for (let d = 1; d <= daysInMonth; d++) {
     const doneCount = dayStats[d];
-    const pct = (doneCount / totalHabitsCount) * 100;
     const isFuture = isCurrentRealMonth ? d > REAL_TODAY : (currentYear > REAL_YEAR || (currentYear === REAL_YEAR && currentMonth > REAL_MONTH));
-    const tCol = document.createElement('div'); tCol.className = 'trend-bar-col';
-    const tBar = document.createElement('div'); tBar.className = 'trend-bar' + (isFuture ? ' future' : ''); tBar.style.height = isFuture ? '2px' : `${Math.max(2, pct)}%`;
-    tCol.appendChild(tBar); trendWrap.appendChild(tCol);
     const hCell = document.createElement('div'); hCell.className = 'hm-cell';
     if (!isFuture && doneCount > 0) {
       const opacity = 0.2 + (0.8 * (doneCount / totalHabitsCount));
@@ -626,7 +640,7 @@ function saveSyncSettings() {
   localStorage.setItem(GIST_TOKEN_KEY, document.getElementById('gist-token').value.trim());
   localStorage.setItem(GIST_ID_KEY, document.getElementById('gist-id').value.trim());
   closeSyncModal();
-  pullFromGist(); // Первинне завантаження при підключенні
+  pullFromGist();
 }
 
 async function pullFromGist() {
@@ -640,7 +654,6 @@ async function pullFromGist() {
     const content = json.files['tracker_data.json']?.content;
     if(content) {
       const data = JSON.parse(content);
-      // Відновлюємо все, що є в бекапі (проходимося по всіх збережених місяцях)
       Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
       render();
       setDot('success');
@@ -653,7 +666,6 @@ async function pushToGist() {
   if(!creds) return;
   setDot('active');
   
-  // Збираємо всю історію (всі ключі localStorage, які стосуються трекера)
   const fullData = {};
   for(let i=0; i<localStorage.length; i++) {
     let k = localStorage.key(i);
@@ -677,8 +689,8 @@ function triggerAutoSync() {
   syncTimeout = setTimeout(() => { pushToGist(); }, 2000);
 }
 
-// Завантажуємо з хмари при старті
 window.onload = () => { pullFromGist(); };
+window.addEventListener('resize', () => { render(); }); // Перемальовує SVG при зміні орієнтації екрана
 
 render();
 </script>
