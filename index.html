@@ -73,23 +73,27 @@ body {
 /* Scroll wrapper */
 .scroll-outer { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 1rem 0.5rem; scrollbar-width: none; scroll-behavior: smooth; }
 .scroll-outer::-webkit-scrollbar { display: none; }
-.grid-table { display: flex; flex-direction: column; min-width: max-content; }
+.grid-table { display: flex; flex-direction: column; min-width: max-content; position: relative; }
 
-/* Фікс накладання шарів: жорсткий фон і високий z-index */
+/* Фікс накладання шарів: залізобетонна ізоляція та z-index */
 .sticky-lbl { 
   position: sticky; 
   left: 0; 
-  z-index: 10; 
+  z-index: 100; 
   background: var(--bg); 
   width: var(--label-w); 
   min-width: var(--label-w); 
   flex-shrink: 0; 
+  isolation: isolate;
 }
 
 /* Row template */
-.g-row { display: flex; align-items: stretch; border-top: 1px solid var(--border); }
+.g-row { display: flex; align-items: stretch; border-top: 1px solid var(--border); position: relative; }
 .g-row:last-child { border-bottom: 1px solid var(--border); }
-.g-head { border-top: none; align-items: flex-end; padding-bottom: 5px; }
+
+/* Шапка таблиці має бути вище за назви при вертикальному перетині */
+.g-head { border-top: none; align-items: flex-end; padding-bottom: 5px; position: relative; z-index: 105; }
+.g-head .sticky-lbl { z-index: 110; }
 
 /* Sort Mode */
 .h-order { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 0; opacity: 0; overflow: hidden; transition: all 0.25s; flex-shrink: 0; }
@@ -99,13 +103,14 @@ body {
 
 /* Categories */
 .g-row.is-category { border-top: none; height: 36px; align-items: flex-end; }
+.g-row.is-category .sticky-lbl { z-index: 99; } /* трохи нижче за звичайні рядки */
 .cat-lbl-wrap { display: flex; align-items: flex-end; height: 100%; padding-bottom: 4px; }
 .cat-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); padding-left: 4px; font-weight: 700; cursor: pointer; }
 .g-row.is-category .cb-cell { border-top: none; }
 .cat-line { position: absolute; bottom: 8px; left: 0; right: 0; height: 1px; background: var(--border); opacity: 0.5; pointer-events: none; }
 
 /* Headers Cells */
-.head-cell { width: var(--col-w); min-width: var(--col-w); flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; position: relative; }
+.head-cell { width: var(--col-w); min-width: var(--col-w); flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; position: relative; z-index: 1; }
 .d-num  { font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1; }
 .d-name { font-size: 10px; color: var(--muted); opacity: 0.7; }
 .head-cell.is-today .d-num  { color: var(--green); }
@@ -123,7 +128,7 @@ body {
 .h-name  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Checkbox cells */
-.cb-cell { width: var(--col-w); min-width: var(--col-w); flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+.cb-cell { width: var(--col-w); min-width: var(--col-w); flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
 .cb-cell.is-today-col { background: var(--today-col); }
 .cb { width: 28px; height: 28px; border-radius: 7px; border: 1.5px solid var(--border); background: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all 0.1s; position: relative; z-index: 1; flex-shrink: 0; }
 .cb:active { transform: scale(0.85); }
@@ -138,7 +143,7 @@ body {
 .num-val { font-size: 11px; font-weight: 700; color: #fff; line-height: 1; }
 
 /* Row % */
-.row-pct { display: flex; align-items: center; padding-left: 8px; flex-shrink: 0; }
+.row-pct { display: flex; align-items: center; padding-left: 8px; flex-shrink: 0; position: relative; z-index: 1; }
 .pct-pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: var(--green-light); color: var(--green-dark); white-space: nowrap; }
 .pct-pill.zero { background: transparent; color: var(--muted); font-weight: 400; }
 
@@ -267,7 +272,7 @@ body {
 </div>
 
 <div class="footer-hint">
-  ✎ Натисни на назву, щоб змінити її. Почни назву з # для створення категорії.
+  ✎ Натисни на назву, щоб змінити її. Почни назву з # для створення категории.
 </div>
 
 <div class="sync-modal" id="sync-modal">
@@ -443,7 +448,7 @@ function generateRealityCheck(pct) {
   }
   if (pct >= 85) {
     box.style.borderLeftColor = '#1D9E75'; 
-    rc.innerHTML = "Машина. Ти стабільно закриваєш свои цілі і не шукаєш виправдань. Головне — не зловити вигоряння, тримай цей фокус.";
+    rc.innerHTML = "Машина. Ти стабільно закриваєш свої цілі і не шукаєш виправдань. Головне — не зловити вигоряння, тримай цей фокус.";
   } else if (pct >= 60) {
     box.style.borderLeftColor = '#ff9500'; 
     rc.innerHTML = "Нормально, але це зона комфорту. Ти робиш рівно стільки, щоб заспокоїти совість. З такім темпом до цілей йти довго. Піднажми.";
