@@ -74,7 +74,17 @@ body {
 .scroll-outer { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 1rem 0.5rem; scrollbar-width: none; scroll-behavior: smooth; }
 .scroll-outer::-webkit-scrollbar { display: none; }
 .grid-table { display: flex; flex-direction: column; min-width: max-content; }
-.sticky-lbl { position: sticky; left: 0; z-index: 3; background: var(--bg); width: var(--label-w); min-width: var(--label-w); flex-shrink: 0; }
+
+/* Фікс накладання шарів: жорсткий фон і високий z-index */
+.sticky-lbl { 
+  position: sticky; 
+  left: 0; 
+  z-index: 10; 
+  background: var(--bg); 
+  width: var(--label-w); 
+  min-width: var(--label-w); 
+  flex-shrink: 0; 
+}
 
 /* Row template */
 .g-row { display: flex; align-items: stretch; border-top: 1px solid var(--border); }
@@ -433,7 +443,7 @@ function generateRealityCheck(pct) {
   }
   if (pct >= 85) {
     box.style.borderLeftColor = '#1D9E75'; 
-    rc.innerHTML = "Машина. Ти стабільно закриваєш свої цілі і не шукаєш виправдань. Головне — не зловити вигоряння, тримай цей фокус.";
+    rc.innerHTML = "Машина. Ти стабільно закриваєш свои цілі і не шукаєш виправдань. Головне — не зловити вигоряння, тримай цей фокус.";
   } else if (pct >= 60) {
     box.style.borderLeftColor = '#ff9500'; 
     rc.innerHTML = "Нормально, але це зона комфорту. Ти робиш рівно стільки, щоб заспокоїти совість. З такім темпом до цілей йти довго. Піднажми.";
@@ -488,7 +498,6 @@ function drawAreaChart(dayStats, daysInMonth, isCurrentRealMonth) {
   `;
 }
 
-// Функція фокусування на поточному дні
 function scrollToToday() {
   const isCurrentRealMonth = (currentYear === REAL_YEAR && currentMonth === REAL_MONTH);
   if (!isCurrentRealMonth) return;
@@ -497,11 +506,9 @@ function scrollToToday() {
   const wrapper = document.getElementById('scroll-wrapper');
   
   if (todayCell && wrapper) {
-    // Невеликий таймаут, щоб таблиця повністю відрендерилась у DOM перед розрахунком скролу
     setTimeout(() => {
       const cellOffset = todayCell.offsetLeft;
-      const labelWidth = 140; // --label-w
-      // Центруємо клітинку в зоні видимості скролу
+      const labelWidth = 140; 
       wrapper.scrollLeft = cellOffset - labelWidth - 10;
     }, 100);
   }
@@ -556,7 +563,6 @@ function render() {
     const cell = document.createElement('div');
     cell.className = 'head-cell' + (isToday ? ' is-today' : isPast ? ' is-past' : '');
     
-    // Призначаємо id для автоскролу
     if (isToday) cell.id = 'today-cell';
     
     if (isToday) cell.innerHTML += `<div class="today-bg"></div>`;
@@ -690,7 +696,7 @@ async function pullFromGist() {
       Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
       render();
       setDot('success');
-      scrollToToday(); // Фокусуємось після успішного завантаження даних
+      scrollToToday(); 
     } else { setDot('error'); }
   } catch(e) { setDot('error'); }
 }
@@ -725,7 +731,6 @@ function triggerAutoSync() {
 
 window.onload = () => { 
   pullFromGist(); 
-  // Локальний фокус про всяк випадок (якщо хмара довго відповідає)
   scrollToToday(); 
 };
 window.addEventListener('resize', () => { render(); scrollToToday(); }); 
