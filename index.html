@@ -25,7 +25,7 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --row-h: 46px;
   --col-w: 38px;
-  --label-w: 140px;
+  --label-w: 165px; /* Збільшено для ідеального вирівнювання під датами */
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -71,11 +71,23 @@ body {
 @keyframes pulse { from { opacity: 0.5; transform: scale(0.9); } to { opacity: 1; transform: scale(1.2); } }
 
 /* Scroll wrapper */
-.scroll-outer { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 1rem 0.5rem; scrollbar-width: none; scroll-behavior: smooth; }
+.scroll-outer { 
+  overflow-x: auto; 
+  -webkit-overflow-scrolling: touch; 
+  padding: 0 1rem 0.5rem; 
+  scrollbar-width: none; 
+  scroll-behavior: smooth; 
+}
 .scroll-outer::-webkit-scrollbar { display: none; }
-.grid-table { display: flex; flex-direction: column; min-width: max-content; position: relative; }
 
-/* Фікс накладання шарів: залізобетонна ізоляція та z-index */
+.grid-table { 
+  display: flex; 
+  flex-direction: column; 
+  min-width: max-content; 
+  position: relative;
+}
+
+/* Залізобетонна ізоляція лівої плашки з назвами звичок */
 .sticky-lbl { 
   position: sticky; 
   left: 0; 
@@ -85,27 +97,46 @@ body {
   min-width: var(--label-w); 
   flex-shrink: 0; 
   isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 /* Row template */
-.g-row { display: flex; align-items: stretch; border-top: 1px solid var(--border); position: relative; }
+.g-row { 
+  display: flex; 
+  align-items: stretch; 
+  border-top: 1px solid var(--border); 
+  position: relative; 
+}
 .g-row:last-child { border-bottom: 1px solid var(--border); }
 
-/* Шапка таблиці має бути вище за назви при вертикальному перетині */
+/* Шапка таблиці */
 .g-head { border-top: none; align-items: flex-end; padding-bottom: 5px; position: relative; z-index: 105; }
 .g-head .sticky-lbl { z-index: 110; }
 
 /* Sort Mode */
-.h-order { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 0; opacity: 0; overflow: hidden; transition: all 0.25s; flex-shrink: 0; }
+.h-order { 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  align-items: center; 
+  width: 0; 
+  opacity: 0; 
+  overflow: hidden; 
+  transition: all 0.25s; 
+  flex-shrink: 0; 
+  padding-left: 2px;
+}
 .sorting-active .h-order { width: 22px; opacity: 0.5; }
 .sorting-active .cb-cell, .sorting-active .row-pct { opacity: 0.2; pointer-events: none; transition: opacity 0.2s; }
 .order-btn { font-size: 10px; cursor: pointer; padding: 4px; line-height: 1; -webkit-tap-highlight-color: transparent; }
 
 /* Categories */
 .g-row.is-category { border-top: none; height: 36px; align-items: flex-end; }
-.g-row.is-category .sticky-lbl { z-index: 99; } /* трохи нижче за звичайні рядки */
-.cat-lbl-wrap { display: flex; align-items: flex-end; height: 100%; padding-bottom: 4px; }
-.cat-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); padding-left: 4px; font-weight: 700; cursor: pointer; }
+.g-row.is-category .sticky-lbl { z-index: 99; }
+.cat-lbl-wrap { display: flex; align-items: flex-end; height: 100%; padding-bottom: 4px; width: 100%; }
+.cat-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); padding-left: 6px; font-weight: 700; cursor: pointer; }
 .g-row.is-category .cb-cell { border-top: none; }
 .cat-line { position: absolute; bottom: 8px; left: 0; right: 0; height: 1px; background: var(--border); opacity: 0.5; pointer-events: none; }
 
@@ -120,15 +151,33 @@ body {
 .today-bg { position: absolute; inset: 0; background: var(--today-col); border-radius: 8px 8px 0 0; z-index: 0; pointer-events: none; }
 .head-cell > * { position: relative; z-index: 1; }
 
-/* Habit label */
-.habit-lbl { display: flex; align-items: center; height: var(--row-h); padding-right: 8px; position: relative; }
-.h-content { display: flex; align-items: center; gap: 6px; flex: 1; cursor: pointer; -webkit-tap-highlight-color: rgba(0,0,0,0.05); padding-left: 4px; overflow: hidden; }
+/* Habit label з внутрішнім зсувом вправо */
+.habit-lbl { display: flex; align-items: center; height: var(--row-h); width: 100%; padding-right: 4px; position: relative; }
+.h-content { 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+  flex: 1; 
+  cursor: pointer; 
+  -webkit-tap-highlight-color: rgba(0,0,0,0.05); 
+  padding-left: 6px; 
+  overflow: hidden; 
+}
 .h-emoji { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
 .h-name-wrap { display: flex; flex-direction: column; justify-content: center; width: 100%; }
 .h-name  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Checkbox cells */
-.cb-cell { width: var(--col-w); min-width: var(--col-w); flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+/* Checkbox cells - обрізаємо виповзання зліва за допомогою відносного позиціонування */
+.cb-cell { 
+  width: var(--col-w); 
+  min-width: var(--col-w); 
+  flex-shrink: 0; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  position: relative; 
+  z-index: 1; 
+}
 .cb-cell.is-today-col { background: var(--today-col); }
 .cb { width: 28px; height: 28px; border-radius: 7px; border: 1.5px solid var(--border); background: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all 0.1s; position: relative; z-index: 1; flex-shrink: 0; }
 .cb:active { transform: scale(0.85); }
@@ -147,7 +196,7 @@ body {
 .pct-pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: var(--green-light); color: var(--green-dark); white-space: nowrap; }
 .pct-pill.zero { background: transparent; color: var(--muted); font-weight: 400; }
 
-/* Actions (Центрована кнопка) */
+/* Actions */
 .actions { display: flex; justify-content: center; padding: 1.2rem 1rem; width: 100%; }
 .btn { font-size: 13px; font-weight: 600; border-radius: 10px; padding: 10px 24px; cursor: pointer; font-family: inherit; border: none; }
 .btn-add { background: var(--green); color: #fff; }
@@ -272,7 +321,7 @@ body {
 </div>
 
 <div class="footer-hint">
-  ✎ Натисни на назву, щоб змінити її. Почни назву з # для створення категории.
+  ✎ Натисни на назву, щоб змінити її. Почни назву з # для створення категорії.
 </div>
 
 <div class="sync-modal" id="sync-modal">
@@ -454,7 +503,7 @@ function generateRealityCheck(pct) {
     rc.innerHTML = "Нормально, але це зона комфорту. Ти робиш рівно стільки, щоб заспокоїти совість. З такім темпом до цілей йти довго. Піднажми.";
   } else {
     box.style.borderLeftColor = '#ff453a'; 
-    rc.innerHTML = "Відвертий провал. Ти просто пливеш за течією. Якщо ти ігноруватимеш завдання і далі, про свої цілі можеш забути. Зберись.";
+    rc.innerHTML = "Відвертий провал. Ти просто пливеш за течією. Якщо ти ігноруватимеш завдання і далі, про souvenirs цілі можеш забути. Зберись.";
   }
 }
 
@@ -513,7 +562,7 @@ function scrollToToday() {
   if (todayCell && wrapper) {
     setTimeout(() => {
       const cellOffset = todayCell.offsetLeft;
-      const labelWidth = 140; 
+      const labelWidth = 145; // скориговано під нову ширину плашки
       wrapper.scrollLeft = cellOffset - labelWidth - 10;
     }, 100);
   }
